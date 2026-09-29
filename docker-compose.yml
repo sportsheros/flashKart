@@ -1,0 +1,39 @@
+# Fixed project name so container/volume names don't depend on the checkout folder name
+name: flashkart
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flashkart-postgres
+    environment:
+      POSTGRES_USER: flashkart
+      POSTGRES_PASSWORD: flashkart
+      POSTGRES_DB: flashkart
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flashkart -d flashkart"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: flashkart-redis
+    # AOF so reservations/stock survive a restart (C2: Redis durability)
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
+  redisdata:
